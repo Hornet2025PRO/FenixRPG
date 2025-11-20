@@ -1,0 +1,5 @@
+{
+  "name": "FenixRPG",
+  "description": "Un juego de rol de texto impulsado por la API de Gemini. Crea tu personaje, toma decisiones y vive una aventura única creada por IA.",
+  "requestFramePermissions": []
+}
