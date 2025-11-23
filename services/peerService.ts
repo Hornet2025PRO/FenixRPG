@@ -1,8 +1,6 @@
 
 import { Peer, DataConnection } from "peerjs";
 
-// Define NetworkMessage here to avoid circular dependency issues if needed, 
-// or import if build system allows. Using `any` for payload flexibility.
 export interface NetworkMessage {
     type: 'SYNC_STATE' | 'PLAYER_ACTION' | 'GAME_START';
     payload: any;
@@ -13,14 +11,26 @@ class PeerService {
     private conn: DataConnection | null = null;
     private onDataCallback: ((data: NetworkMessage) => void) | null = null;
 
+    private cleanup() {
+        if (this.conn) {
+            try { this.conn.close(); } catch(e) {}
+        }
+        if (this.peer) {
+            try { this.peer.destroy(); } catch(e) {}
+        }
+        this.conn = null;
+        this.peer = null;
+    }
+
     // Initialize as Host
     public async initializeHost(): Promise<string> {
+        this.cleanup();
+        
         return new Promise((resolve, reject) => {
-            // Create a random ID for the host
             this.peer = new Peer();
 
             this.peer.on('open', (id) => {
-                console.log('My peer ID is: ' + id);
+                console.log('Host initialized. ID:', id);
                 resolve(id);
             });
 
@@ -31,7 +41,7 @@ class PeerService {
             });
 
             this.peer.on('error', (err) => {
-                console.error(err);
+                console.error("Peer Host Error:", err);
                 reject(err);
             });
         });
@@ -39,27 +49,51 @@ class PeerService {
 
     // Join as Guest
     public async joinGame(hostId: string): Promise<void> {
+        this.cleanup();
+
         return new Promise((resolve, reject) => {
             this.peer = new Peer();
 
             this.peer.on('open', () => {
                 if (!this.peer) return;
-                const connection = this.peer.connect(hostId);
                 
+                console.log(`Connecting to host: ${hostId}`);
+                // reliable: true mejora la consistencia de datos para juegos
+                const connection = this.peer.connect(hostId, { reliable: true });
+                
+                // Flag to track if connection opened successfully
+                let isConnected = false;
+
                 connection.on('open', () => {
-                    console.log("Connected to host: " + hostId);
+                    console.log("Connected to host successfully");
+                    isConnected = true;
                     this.conn = connection;
                     this.setupConnectionHandlers();
                     resolve();
                 });
 
                 connection.on('error', (err) => {
-                    reject(err);
+                    console.error("Connection Error:", err);
+                    if (!isConnected) reject(err);
                 });
+
+                // Timeout de seguridad si la conexión se queda colgada
+                setTimeout(() => {
+                    if (!isConnected) {
+                        // Si no conectó en 10s, rechazamos
+                        reject(new Error("Tiempo de espera agotado al intentar conectar con la sala."));
+                    }
+                }, 10000);
             });
 
-            this.peer.on('error', (err) => {
-                reject(err);
+            // Catch specific peer errors like 'peer-unavailable'
+            this.peer.on('error', (err: any) => {
+                console.error("Peer Client Error:", err);
+                if (err.type === 'peer-unavailable') {
+                    reject(new Error("No se encontró la sala. Verifica el código."));
+                } else {
+                    reject(err);
+                }
             });
         });
     }
@@ -68,7 +102,6 @@ class PeerService {
         if (!this.conn) return;
 
         this.conn.on('data', (data) => {
-            console.log("Received data:", data);
             if (this.onDataCallback) {
                 this.onDataCallback(data as NetworkMessage);
             }
@@ -76,7 +109,10 @@ class PeerService {
 
         this.conn.on('close', () => {
             console.log("Connection closed");
-            // Handle disconnection if necessary
+        });
+        
+        this.conn.on('error', (err) => {
+            console.error("DataConnection Error:", err);
         });
     }
 
@@ -93,14 +129,7 @@ class PeerService {
     }
 
     public disconnect() {
-        if (this.conn) {
-            this.conn.close();
-        }
-        if (this.peer) {
-            this.peer.destroy();
-        }
-        this.conn = null;
-        this.peer = null;
+        this.cleanup();
     }
 }
 

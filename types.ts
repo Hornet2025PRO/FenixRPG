@@ -69,6 +69,14 @@ export enum LocationType {
     GENERICO = 'GENERICO',
 }
 
+export interface Achievement {
+    id: string;
+    title: string;
+    description: string;
+    emoji: string;
+    isHidden?: boolean; // If true, description is hidden until unlocked
+}
+
 export interface MapCoordinates {
     x: number;
     y: number;
@@ -160,6 +168,7 @@ export interface GameUpdate {
   scene: Scene;
   updatedParty: Character[];
   nextTurnIndex: number;
+  unlockedAchievements?: string[]; // IDs of achievements unlocked this turn
 }
 
 export interface InitialGameData {

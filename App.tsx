@@ -39,22 +39,66 @@ const getFriendlyErrorMessage = (err: any): string => {
     return "⚠️ Algo salió mal en la aventura. Intenta realizar la acción nuevamente.";
 };
 
+const DEATH_QUOTES = [
+    "La muerte es solo el principio de un viaje más oscuro.",
+    "Tu luz se ha extinguido, pero las sombras permanecen.",
+    "Ni siquiera el valor pudo salvarte esta vez.",
+    "El destino es cruel, y hoy ha cortado tu hilo.",
+    "Aquí yace otro héroe olvidado por el tiempo.",
+    "La oscuridad te abraza como a un viejo amigo.",
+    "Tus hazañas serán susurros en el viento, nada más.",
+    "El abismo te devuelve la mirada... y sonríe.",
+    "Un final trágico para una ambición desmedida.",
+    "Tus huesos adornarán esta mazmorra por la eternidad."
+];
+
 // Componente Pantalla de Muerte
-const GameOverScreen: React.FC<{ onRestart: () => void }> = ({ onRestart }) => (
-    <div className="fixed inset-0 z-50 bg-black flex flex-col items-center justify-center text-center p-4 animate-fade-in">
-        <div className="text-red-800 w-32 h-32 mb-6 animate-pulse">
-            <SkullIcon />
+const GameOverScreen: React.FC<{ onRestart: () => void }> = ({ onRestart }) => {
+    const [quote, setQuote] = useState("");
+    const [opacity, setOpacity] = useState("opacity-0");
+
+    useEffect(() => {
+        setQuote(DEATH_QUOTES[Math.floor(Math.random() * DEATH_QUOTES.length)]);
+        // Efecto de entrada suave
+        const timer = setTimeout(() => setOpacity("opacity-100"), 100);
+        return () => clearTimeout(timer);
+    }, []);
+
+    return (
+        <div className={`fixed inset-0 z-50 bg-black flex flex-col items-center justify-center text-center p-4 transition-opacity duration-1000 ${opacity} overflow-hidden`}>
+            {/* Background Atmosphere */}
+            <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-red-900/30 via-black to-black pointer-events-none animate-pulse"></div>
+            
+            <div className="relative z-10 flex flex-col items-center max-w-3xl w-full">
+                <div className="text-red-900/80 w-32 h-32 mb-8 animate-bounce opacity-90 filter drop-shadow-[0_0_25px_rgba(153,27,27,0.5)]">
+                    <SkullIcon />
+                </div>
+                
+                <h1 className="font-display text-6xl md:text-9xl text-red-800 font-bold mb-6 text-shadow-lg tracking-[0.15em] border-b-2 border-red-900/30 pb-6 w-full">
+                    HAS MUERTO
+                </h1>
+                
+                <div className="mt-8 mb-12 space-y-6 bg-black/20 backdrop-blur-sm p-6 rounded-lg border border-red-900/20">
+                    <p className="text-stone-400 text-2xl md:text-3xl font-serif italic leading-relaxed px-4 md:px-8 border-l-2 border-red-900/50">
+                        "{quote}"
+                    </p>
+                    <div className="h-px w-1/3 bg-red-900/30 mx-auto my-4"></div>
+                    <p className="text-stone-600 text-sm uppercase tracking-[0.3em] font-bold">
+                        Tu partida ha sido borrada permanentemente
+                    </p>
+                </div>
+
+                <button 
+                    onClick={onRestart}
+                    className="group relative px-12 py-4 bg-transparent border border-stone-800 text-stone-500 hover:text-red-500 hover:border-red-900 transition-all duration-500 overflow-hidden rounded"
+                >
+                    <span className="relative z-10 font-display font-bold text-xl tracking-widest uppercase">Regresar al Menú</span>
+                    <div className="absolute inset-0 bg-red-900/10 transform scale-x-0 group-hover:scale-x-100 transition-transform duration-500 origin-left"></div>
+                </button>
+            </div>
         </div>
-        <h1 className="font-display text-6xl md:text-8xl text-red-700 font-bold mb-4 text-shadow tracking-widest">HAS MUERTO</h1>
-        <p className="text-stone-400 text-xl md:text-2xl mb-8 font-serif italic">Tu leyenda termina aquí. Tu partida ha sido borrada.</p>
-        <button 
-            onClick={onRestart}
-            className="px-8 py-3 bg-transparent border-2 border-red-800 text-red-800 hover:bg-red-900/20 hover:text-red-600 font-display font-bold text-xl transition-all duration-300 rounded"
-        >
-            Regresar al Menú
-        </button>
-    </div>
-);
+    );
+};
 
 const App: React.FC = () => {
   const [gameState, setGameState] = useState<GameState>(GameState.LOADING);

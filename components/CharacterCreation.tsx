@@ -66,6 +66,7 @@ const CharacterCreation: React.FC<CharacterCreationProps> = ({ onPartyCreate, on
   const [hostId, setHostId] = useState<string>('');
   const [joinIdInput, setJoinIdInput] = useState('');
   const [guestConnected, setGuestConnected] = useState(false);
+  const [joinError, setJoinError] = useState<string | null>(null);
 
   const hasSavedGames = savedGames.length > 0;
 
@@ -109,13 +110,15 @@ const CharacterCreation: React.FC<CharacterCreationProps> = ({ onPartyCreate, on
 
   const handleStartHosting = async () => {
       setIsLoading(true);
+      setJoinError(null);
       try {
           const id = await onHostGame();
           setHostId(id);
           setMultiplayerView('HOSTING');
           setGuestConnected(false);
-      } catch (e) {
+      } catch (e: any) {
           console.error(e);
+          setJoinError("Error al iniciar el servidor: " + (e.message || "Desconocido"));
       } finally {
           setIsLoading(false);
       }
@@ -124,13 +127,14 @@ const CharacterCreation: React.FC<CharacterCreationProps> = ({ onPartyCreate, on
   const handleJoin = async () => {
       if (!joinIdInput) return;
       setIsLoading(true);
+      setJoinError(null);
       try {
-          await onJoinGame(joinIdInput);
+          // Trim input to avoid copy-paste spaces
+          await onJoinGame(joinIdInput.trim());
           setMultiplayerView('JOINING');
-          // If successful, the parent component usually handles state transition or shows waiting screen
-      } catch (e) {
+      } catch (e: any) {
           console.error(e);
-          // In a real app, show specific join error
+          setJoinError("Error al unirse: " + (e.message || "Verifica el código e intenta de nuevo."));
       } finally {
           setIsLoading(false);
       }
@@ -157,31 +161,39 @@ const CharacterCreation: React.FC<CharacterCreationProps> = ({ onPartyCreate, on
       <h2 className="font-display text-4xl font-bold text-center text-stone-700 mb-8 text-shadow">Elige tu Aventura</h2>
       
       {/* Multiplayer Controls Header */}
-      <div className="flex justify-center gap-4 mb-8">
+      <div className="flex flex-col items-center gap-4 mb-8">
           {multiplayerView === 'NONE' && (
               <>
-                <button 
-                    onClick={handleStartHosting}
-                    className="px-4 py-2 bg-stone-800 text-stone-200 rounded hover:bg-stone-700 transition-colors text-sm font-bold"
-                >
-                    Crear Sala Multijugador
-                </button>
-                <div className="flex gap-2">
-                    <input 
-                        type="text" 
-                        placeholder="Código de Sala" 
-                        className="px-3 py-2 border border-stone-400 rounded bg-white/50 text-sm"
-                        value={joinIdInput}
-                        onChange={(e) => setJoinIdInput(e.target.value)}
-                    />
+                <div className="flex gap-4 items-center">
                     <button 
-                        onClick={handleJoin}
-                        disabled={!joinIdInput}
-                        className="px-4 py-2 bg-amber-800 text-white rounded hover:bg-amber-700 transition-colors disabled:opacity-50 text-sm font-bold"
+                        onClick={handleStartHosting}
+                        disabled={isLoading}
+                        className="px-4 py-2 bg-stone-800 text-stone-200 rounded hover:bg-stone-700 transition-colors text-sm font-bold disabled:opacity-50"
                     >
-                        Unirse
+                        Crear Sala Multijugador
                     </button>
+                    <div className="flex gap-2">
+                        <input 
+                            type="text" 
+                            placeholder="Código de Sala" 
+                            className="px-3 py-2 border border-stone-400 rounded bg-white/50 text-sm w-40"
+                            value={joinIdInput}
+                            onChange={(e) => setJoinIdInput(e.target.value)}
+                        />
+                        <button 
+                            onClick={handleJoin}
+                            disabled={!joinIdInput || isLoading}
+                            className="px-4 py-2 bg-amber-800 text-white rounded hover:bg-amber-700 transition-colors disabled:opacity-50 text-sm font-bold"
+                        >
+                            Unirse
+                        </button>
+                    </div>
                 </div>
+                {joinError && (
+                    <div className="bg-red-100 text-red-700 px-4 py-2 rounded border border-red-300 text-sm">
+                        {joinError}
+                    </div>
+                )}
               </>
           )}
       </div>

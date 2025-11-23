@@ -1,3 +1,4 @@
+
 import React, { useMemo } from 'react';
 import type { MapLocation, Character, Enemy } from '../types';
 import { LocationType } from '../types';
@@ -21,7 +22,7 @@ const PADDING = 2; // in grid units
 const LocationIcon: React.FC<{type: LocationType}> = ({ type }) => {
     const commonProps = {
         className: "w-10 h-10 text-stone-600 opacity-70", // increased size
-        "aria-hidden": "true",
+        "aria-hidden": "true" as const,
     };
     const IconComponent = {
         [LocationType.PUEBLO]: TownIcon,
