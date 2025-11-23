@@ -8,9 +8,9 @@ export default defineConfig(({ mode }) => {
   return {
     plugins: [react()],
     define: {
-      // Esto permite que el código existente que usa process.env.API_KEY funcione
-      // sin tener que cambiarlo a import.meta.env.VITE_API_KEY
-      'process.env.API_KEY': JSON.stringify(env.API_KEY)
+      // Esto permite que el código existente que usa process.env.API_KEY funcione.
+      // Ahora busca primero VITE_API_KEY, y si no existe, busca API_KEY.
+      'process.env.API_KEY': JSON.stringify(env.VITE_API_KEY || env.API_KEY)
     }
   }
 })
